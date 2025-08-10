@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #f0f0f0; }
+    tr:hover { background-color: #f9f9f9; }
+
+    /* Добавляем стиль кнопки "Назад" */
+    .btn-secondary {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #419dff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+            .btn111 {
+            background-color: #419dff;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+</style>
+
+    <meta charset="UTF-8">
+    <title>Журнал действий</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Журнал действий</h1>
+            <a href="{{ url_for('index') }}" class="btn-secondary">← Назад</a>
+         <div class="content"></div>
+ <a href="{{ url_for('export_logs') }}" class="btn111">
+        📥 Экспорт логов в .txt
+    </a>
+            <div style="margin-bottom: 20px;"></div>
+    <form action="{{ url_for('clear_logs') }}" method="post" style="display: inline;" onsubmit="return confirm('Удалить все логи?');">
+        <button type="submit" class="btn btn-danger">Очистить логи</button>
+                    <div style="margin-bottom: 10px;"></div>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Дата и время</th>
+                <th>Пользователь</th>
+                <th>Действие</th>
+                <th>Оборудование</th>
+                <th>Детали</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.timestamp }}</td>
+                <td>{{ log.user }}</td>
+                <td>{{ log.action }}</td>
+                <td>{{ log.equipment_id }}</td>
+                <td>{{ log.details }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

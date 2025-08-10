@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Устройство: {{ device.name }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    canvas {
+  max-width: 600px;
+  height: 300px;
+  display: block;
+  margin: 20px auto;
+}
+.chart-row {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.chart-small {
+  width: 48%;
+  max-height: 300px;
+}
+
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ccc;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #eee;
+      margin-right: 5px;
+      border-radius: 8px 8px 0 0;
+    }
+    .tab.active {
+      background-color: #419dff;
+      color: white;
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+      background: white;
+      padding: 20px;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .tab-content.active {
+      display: block;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    
+        .btn-secondary {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+  </style>
+</head>
+<body>
+
+  <h1>Устройство: {{ device.name }}</h1>
+    <a href="{{ url_for('index') }}" class="btn-secondary" style="padding: 10px 15px; background-color: #419dff;">← Назад</a>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab(0)">🖥 Информация</div>
+    <div class="tab" onclick="showTab(1)">📊 Графики</div>
+    <div class="tab" onclick="showTab(2)">🕓 История</div>
+    <div class="tab" onclick="showTab(3)">📝 Действия</div>
+  </div>
+
+  <div class="tab-content active">
+    {% if device_type == 'pc' or device_type == 'server' %}
+      <p><strong>Тип:</strong> {{ device_type }}</p>
+      <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+      <p><strong>ОС:</strong> {{ device.os or '—' }}</p>
+      {% if device_type == 'server' %}
+        <p><strong>Uptime:</strong> {{ device.uptime or '—' }}</p>
+        <p><strong>Роли:</strong> {{ device.roles or '—' }}</p>
+      {% endif %}
+    {% elif device_type == 'network' %}
+      <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+      <p><strong>Пинг:</strong> {{ device.ping or '—' }} мс</p>
+      <p><strong>Трафик:</strong> {{ device.traffic or '—' }} Мбит/с</p>
+      <p><strong>Порты:</strong> {{ device.port_status or '—' }}</p>
+    {% elif device_type == 'peripheral' %}
+      <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+      <p><strong>Статус:</strong> {{ device.status or '—' }}</p>
+      <p><strong>Тонер:</strong> {{ device.toner or '—' }}%</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-content">
+  {% if device_type == 'pc' or device_type == 'server' %}
+    <div class="chart-row">
+  <canvas id="cpuChart" class="chart-small"></canvas>
+  <canvas id="memoryChart" class="chart-small"></canvas>
+</div>
+  {% elif device_type == 'network' %}
+    <div style="max-width: 600px; margin: 0 auto;"><canvas id="pingChart"></canvas></div>
+    <div style="max-width: 600px; margin: 0 auto;"><canvas id="trafficChart"></canvas></div>
+  {% elif device_type == 'peripheral' %}
+    <div style="max-width: 600px; margin: 0 auto;"><canvas id="tonerChart"></canvas></div>
+  {% endif %}
+</div>
+
+
+  <div class="tab-content">
+    <ul>
+      {% for i in range(history_data.dates|length) %}
+        <li>
+          <strong>{{ history_data.dates[i] }}</strong> — 
+          {% if device_type in ['pc', 'server'] %}
+            CPU: {{ history_data.cpu[i] }}%, Память: {{ history_data.memory[i] }}%
+          {% elif device_type == 'network' %}
+            Пинг: {{ history_data.ping[i] }} мс, Трафик: {{ history_data.traffic[i] }} Мбит/с
+          {% elif device_type == 'peripheral' %}
+            Тонер: {{ history_data.toner[i] }}%
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+<div id="actions" class="tab-content">
+    <h2 style="text-align:center;">Действия</h2>
+    <div style="text-align:center;">
+        <a href="{{ url_for('export_device_history', device_id=device_id) }}" class="btn">⬇️ Скачать историю (TXT)</a>
+        <form action="{{ url_for('archive_equipment', equipment_id=device_id) }}" method="post" style="display:inline;">
+            <button type="submit" class="btn" style="background-color: orange;">📦 Архивировать</button>
+        </form>
+        <form action="{{ url_for('delete_equipment', equipment_id=device_id) }}" method="post" style="display:inline;">
+            <button type="submit" class="btn" style="background-color: red;">🗑 Удалить</button>
+        </form>
+    </div>
+</div>
+
+  <script>
+    function showTab(index) {
+      const tabs = document.querySelectorAll('.tab');
+      const contents = document.querySelectorAll('.tab-content');
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tabs[index].classList.add('active');
+      contents[index].classList.add('active');
+    }
+
+    const data = {{ history_data | tojson | safe }};
+    const labels = data.dates;
+
+    {% if device_type == 'pc' or device_type == 'server' %}
+      new Chart(document.getElementById('cpuChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'CPU (%)',
+            data: data.cpu,
+            borderColor: 'blue',
+            fill: false
+          }]
+        }
+      });
+
+      new Chart(document.getElementById('memoryChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Память (%)',
+            data: data.memory,
+            borderColor: 'green',
+            fill: false
+          }]
+        }
+      });
+
+    {% elif device_type == 'network' %}
+      new Chart(document.getElementById('pingChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Пинг (мс)',
+            data: data.ping,
+            borderColor: 'orange',
+            fill: false
+          }]
+        }
+      });
+
+      new Chart(document.getElementById('trafficChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Трафик (Мбит/с)',
+            data: data.traffic,
+            borderColor: 'purple',
+            fill: false
+          }]
+        }
+      });
+
+    {% elif device_type == 'peripheral' %}
+      new Chart(document.getElementById('tonerChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Тонер (%)',
+            data: data.toner,
+            borderColor: 'gray',
+            fill: false
+          }]
+        }
+      });
+    {% endif %}
+  </script>
+</body>
+</html>

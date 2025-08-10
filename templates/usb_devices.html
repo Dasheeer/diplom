@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 Список USB-устройств - MoniQ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f4f4f4;
+            color: #34373a;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #419dff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .device-list-horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .device-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 280px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .device-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+
+        .device-card h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #007bff;
+        }
+
+        .device-card p {
+            margin: 6px 0;
+            font-size: 14px;
+        }
+
+        .status {
+            font-weight: bold;
+        }
+
+        .status.active {
+            color: green;
+        }
+
+        .status.inactive {
+            color: red;
+        }
+
+        .status.unknown {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Список USB-устройств</h1>
+    <a href="{{ url_for('index') }}" class="btn-secondary">← Назад</a>
+    {% if devices %}
+        <div class="device-list-horizontal">
+            {% for device in devices %}
+                <div class="device-card">
+                    <h3>{{ device.Name }}</h3>
+                    <p><strong>Статус:</strong>
+                        <span class="status {% if device.Status == 'Active' %}active{% elif device.Status == 'Inactive' %}inactive{% else %}unknown{% endif %}">
+                            {{ device.Status }}
+                        </span>
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Нет подключённых USB-устройств.</p>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавить оборудование - MoniQ</title>
+</head>
+<body>
+  <h1>Добавить оборудование</h1>
+  <form method="post">
+    Название: <input type="text" name="name"><br>
+    Описание: <input type="text" name="description"><br>
+    <input type="submit" value="Добавить">
+  </form>
+  <label for="type">Тип оборудования:</label>
+<select name="type" required>
+  <option value="pc">ПК</option>
+  <option value="server">Сервер</option>
+  <option value="network">Сетевое оборудование</option>
+  <option value="peripheral">Периферия</option>
+</select>
+</body>
+</html>

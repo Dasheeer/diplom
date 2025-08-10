@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Мониторинг оборудования - MoniQ</title>
+   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+    .header {
+      background-color: #419dff;
+      color: white;
+      text-align: center;
+      padding: 15px 0;
+      position: sticky;
+      top: 0;
+      width: 100%;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .content {
+      padding: 20px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f0f0;
+    }logo
+    h1 {
+      text-align: center;
+    }
+    .device-list-horizontal {
+      display: flex;
+      flex-direction: row;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .device-card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      width: 180px;
+      min-height: 200px;
+    }
+    .plan-container {
+      width: 100%;
+      height: 500px;
+      background: #fff;
+      border: 2px dashed #999;
+      position: relative;
+      margin-top: 20px;
+    }
+    .plan-item {
+      position: absolute;
+      width: 50px;
+      height: 30px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      cursor: move;
+      transition: transform 0.2s;
+    }
+    .resizable {
+      position: absolute;
+      cursor: se-resize;
+      width: 10px;
+      height: 10px;
+      background: #000;
+      bottom: -5px;
+      right: -5px;
+      display: none;
+    }
+    .tools-container, .control-buttons {
+      margin-top: 20px;
+      text-align: center;
+    }
+    button {
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
+      background-color: #419dff;
+      color: white;
+      border: none;
+    }
+    .color-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 999;
+    }
+    .color-modal .colors {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .color-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .color-option.selected {
+      border-color: black;
+    }
+  </style>
+<div style="text-align: right; margin: 10px;">
+  <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
+      <button type="submit" class="btn btn-danger">Выйти</button>
+  </form>
+</div>
+
+</head>
+<script>
+  function updateDeviceData() {
+    fetch('/get_status')
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(device => {
+          const card = document.querySelector(`.device-card[data-id="${device.id}"]`);
+          if (!card) return;
+
+          if (device.type === 'pc') {
+            card.querySelector('.temperature').textContent = device.temperature ?? '—';
+            card.querySelector('.cpu').textContent = device.cpu;
+            card.querySelector('.memory').textContent = device.memory;
+          }
+
+          if (device.type === 'server') {
+            card.querySelector('.cpu').textContent = device.cpu;
+            card.querySelector('.memory').textContent = device.memory;
+          }
+
+          if (device.type === 'network') {
+            card.querySelector('.network').textContent = device.network;
+          }
+        });
+      });
+  }
+
+  setInterval(updateDeviceData, 5000);
+</script>
+
+<body>
+  
+  <div class="header">
+    <h1>Мониторинг оборудования - MoniQ</h1>
+  </div>
+     <div class="content"></div>
+<div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('view_logs') }}" style="padding: 10px 15px; background-color: #419dff; color: white; text-decoration: none; border-radius: 5px;">
+        📜 Журнал действий
+    </a>
+
+    <a href="{{ url_for('archive') }}" style="padding: 10px 15px; background-color: #419dff; color: white; text-decoration: none; border-radius: 5px;">
+        📦 Архив
+    </a>
+</div>
+ <h2>Добавить новое оборудование</h2>
+<form id="addEquipmentFormContent" method="POST">
+  <label for="name">Название оборудования:</label>
+  <input type="text" name="name" required>
+
+  <label for="description">Описание:</label>
+  <input type="text" name="description" required>
+<label for="type">Тип оборудования:</label>
+<select name="type" required>
+  <option value="pc">ПК</option>
+  <option value="server">Сервер</option>
+  <option value="network">Сетевое оборудование</option>
+  <option value="peripheral">Принтер</option>
+</select>
+
+
+            <button type="submit">Сохранить</button>
+        </form>
+                    <div style="margin-bottom: 10px;"></div>
+        <a href="{{ url_for('scan_usb_devices') }}"
+   style="padding: 10px 15px; background-color: #419dff; color: white; text-decoration: none; border-radius: 5px;">
+   🔍 Поиск USB
+</a>
+
+
+        <h2>Оборудование</h2>
+        <input type="text" id="filter-input" placeholder="Поиск оборудования" onkeyup="filterDevices()" style="margin-bottom: 20=px; padding: 5px; width: 300px;">
+        
+            <div style="margin-bottom: 15px;"></div>
+        <div class="device-list-horizontal">
+          {% for device in equipment %}
+<div class="device-card" data-id="{{ device.id }}">
+  {% set type_map = {
+    'pc': 'ПК',
+    'server': 'Сервер',
+    'network': 'Сетевое оборудование',
+    'peripheral': 'Периферия'
+  } %}
+
+  <p><strong>Тип:</strong> {{ type_map.get(device.type, 'Неизвестно') }}</p>
+  <h3>{{ device.name }}</h3>
+  <p><strong>Описание:</strong> {{ device.description }}</p>
+
+  {% if device.type == 'pc' %}
+    <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+    <p><strong>ОС:</strong> {{ device.os or '—' }}</p>
+    <p><strong>Температура:</strong>
+      <span class="temperature">{{ device.temperature or '—' }}</span>°C
+    </p>
+    <p><strong>CPU:</strong>
+      <span class="cpu {% if device.cpu > 80 %}high{% elif device.cpu > 50 %}medium{% else %}low{% endif %}">
+        {{ device.cpu or '—' }}
+      </span>%
+    </p>
+    <p><strong>Память:</strong>
+      <span class="memory {% if device.memory > 80 %}high{% elif device.memory > 50 %}medium{% else %}low{% endif %}">
+        {{ device.memory or '—' }}
+      </span>%
+    </p>
+
+  {% elif device.type == 'server' %}
+    <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+    <p><strong>ОС:</strong> {{ device.os or '—' }}</p>
+    <p><strong>Uptime:</strong> {{ device.uptime or '—' }}</p>
+    <p><strong>Роль:</strong> {{ device.roles or '—' }}</p>
+    <p><strong>CPU:</strong>
+      <span class="cpu {% if device.cpu > 80 %}high{% elif device.cpu > 50 %}medium{% else %}low{% endif %}">
+        {{ device.cpu or '—' }}
+      </span>%
+    </p>
+    <p><strong>Память:</strong>
+      <span class="memory {% if device.memory > 80 %}high{% elif device.memory > 50 %}medium{% else %}low{% endif %}">
+        {{ device.memory or '—' }}
+      </span>%
+    </p>
+    <p><strong>Задержка:</strong>
+      <span class="response {% if device.response > 150 %}high{% elif device.response > 70 %}medium{% else %}low{% endif %}">
+        {{ device.response or '—' }}
+      </span> мс
+    </p>
+
+  {% elif device.type == 'network' %}
+    <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+    <p><strong>Пинг:</strong>
+      <span class="response {% if device.response > 150 %}high{% elif device.response > 70 %}medium{% else %}low{% endif %}">
+        {{ device.response or '—' }}
+      </span> мс
+    </p>
+    <p><strong>Трафик:</strong>
+      <span class="network">{{ device.network or '—' }}</span> Мбит/с
+    </p>
+    <p><strong>Порты:</strong> {{ device.port_status or '—' }}</p>
+
+  {% elif device.type == 'peripheral' %}
+    <p><strong>IP:</strong> {{ device.ip or '—' }}</p>
+    <p><strong>Статус:</strong> {{ device.status or '—' }}</p>
+    <p><strong>Тонер:</strong> {{ device.toner or '—' }}%</p>
+  {% endif %}
+
+  <style>
+    .high { color: red; font-weight: bold; }
+    .medium { color: orange; }
+    .low { color: green; }
+  </style>
+
+  {% if device.type != 'peripheral' %}
+    <form action="{{ url_for('device_detail', device_id=device.id) }}" method="get" style="display:inline;">
+      <button type="submit" class="btn btn-info" style="margin-top: 5px;">Подробнее</button>
+    </form>
+  {% endif %}
+
+  <form action="{{ url_for('archive_equipment', equipment_id=device.id) }}" method="post" style="display:inline;">
+    <button type="submit" class="btn btn-warning btn-sm">Архивировать</button>
+  </form>
+
+  <form action="{{ url_for('delete_equipment', equipment_id=device.id) }}" method="POST" style="display:inline;">
+    <button type="submit" class="btn btn-danger btn-sm">Удалить оборудование</button>
+  </form>
+</div>
+{% endfor %}
+</div> <!-- device-list-horizontal -->
+        
+
+  
+  <h2>План помещения</h2>
+  <div class="plan-container" id="plan"></div>
+
+  <div class="tools-container">
+    <button id="rect-tool">Прямоугольник</button>
+    <button id="circle-tool">Круг</button>
+    <button id="door-tool">Дверь</button>
+    <br><br>
+    <label for="equipment-select">Оборудование:</label>
+<select id="equipment-select">
+  <option value="">-- Выберите --</option>
+  {% for device in equipment %}
+    {% set type_map = {
+      'pc': 'ПК',
+      'server': 'Сервер',
+      'network': 'Сетевое оборудование',
+      'peripheral': 'Периферия'
+    } %}
+    <option value="{{ device.type }}|{{ device.name }}">
+      {{ type_map.get(device.type, 'Неизвестно') }} - {{ device.name }}
+    </option>
+  {% endfor %}
+</select>
+
+    <button id="add-equipment-btn">Добавить на план</button>
+  </div>
+
+  <div class="control-buttons">
+    <button id="color-button">Изменить цвет</button>
+    <button id="delete-tool">Удалить</button> 
+  </div>
+
+  <div class="color-modal" id="colorModal">
+    <div><strong>Выберите цвет:</strong></div>
+    <div class="colors">
+      <div class="color-option" data-color="rgba(255,255,0,1)" style="background-color: rgb(5, 30, 255);"></div>
+      <div class="color-option" data-color="rgba(0,128,0,1)" style="background-color: green;"></div>
+      <div class="color-option" data-color="rgba(255,165,0,1)" style="background-color: orange;"></div>
+      <div class="color-option" data-color="rgba(135,206,235,1)" style="background-color: skyblue;"></div>
+    </div>
+    <label for="opacityRange">Прозрачность: <span id="opacityValue">100%</span></label><br>
+    <input type="range" id="opacityRange" min="0" max="100" value="100">
+    <div style="margin-top: 10px;">
+      <button id="applyColor">Применить</button>
+      <button onclick="document.getElementById('colorModal').style.display='none'">Отмена</button>
+    </div>
+  </div>
+
+  <script>
+    const plan = document.getElementById('plan');
+    let currentTool = null;
+    let selectedItem = null;
+    let equipmentToPlace = null;
+
+    document.getElementById('rect-tool').onclick = () => currentTool = 'rect';
+    document.getElementById('circle-tool').onclick = () => currentTool = 'circle';
+    document.getElementById('door-tool').onclick = () => currentTool = 'door';
+
+    document.getElementById('delete-tool').onclick = () => {
+      if (selectedItem) {
+        selectedItem.remove();
+        selectedItem = null;
+      }
+    };
+
+console.log('currentTool:', currentTool);
+plan.addEventListener('click', (e) => {
+  if (e.target !== plan) return;
+
+  const rect = plan.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (equipmentToPlace) {
+    const el = document.createElement('div');
+    el.className = 'plan-item';
+    el.style.left = `${x - 25}px`;
+    el.style.top = `${y - 15}px`;
+
+    let iconUrl = '';
+    switch (equipmentToPlace.type) {
+      case 'pc':
+        iconUrl = '/static/icons/pc.png';
+        break;
+      case 'server':
+        iconUrl = '/static/icons/server.png';
+        break;
+      case 'network':
+        iconUrl = '/static/icons/network.png';
+        break;
+      case 'peripheral':
+        iconUrl = '/static/icons/peripheral.png';
+        break;
+      default:
+        iconUrl = '/static/icons/default.png';
+    }
+
+    el.innerHTML = `
+      <img src="${iconUrl}" alt="${equipmentToPlace.type}" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 5px;">
+      <span>${equipmentToPlace.name}</span>
+    `;
+
+    el.setAttribute('data-name', equipmentToPlace.name);
+    el.setAttribute('data-type', equipmentToPlace.type);
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectItem(el);
+    });
+
+    el.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('resizable')) return;
+      startMove(e, el);
+    });
+
+    const resizer = document.createElement('div');
+    resizer.className = 'resizable';
+    resizer.addEventListener('mousedown', (e) => startResize(e, el));
+    el.appendChild(resizer);
+
+    plan.appendChild(el);
+    equipmentToPlace = null;
+    return;
+  }
+
+  if (currentTool) {
+    createItem(x, y, currentTool);
+    currentTool = null;
+  }
+});
+
+
+
+    function createItem(x, y, type) {
+      const el = document.createElement('div');
+      el.className = 'plan-item';
+      el.style.left = `${x - 25}px`;
+      el.style.top = `${y - 15}px`;
+
+      if (type === 'circle') {
+        el.style.borderRadius = '50%';
+        el.style.backgroundColor = '#007BFF';
+        el.style.width = '30px';
+        el.style.height = '30px';
+      } else if (type === 'door') {
+        el.style.width = '40px';
+        el.style.height = '60px';
+        el.style.backgroundImage = 'url("https://borisov-praktik.by/upload/iblock/af9/wwfjc78wokc5a1kboh1u8swxmljm0ua8.png")';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundRepeat = 'no-repeat';
+        el.style.backgroundPosition = 'center';
+        el.style.backgroundColor = 'transparent';
+      }
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectItem(el);
+      });
+
+      el.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('resizable')) return;
+        startMove(e, el);
+      });
+
+      const resizer = document.createElement('div');
+      resizer.className = 'resizable';
+      resizer.addEventListener('mousedown', (e) => startResize(e, el));
+      el.appendChild(resizer);
+
+      plan.appendChild(el);
+    }
+
+    function selectItem(el) {
+      if (selectedItem) {
+        selectedItem.style.border = '';
+        const resizer = selectedItem.querySelector('.resizable');
+        if (resizer) resizer.style.display = 'none';
+      }
+      selectedItem = el;
+      selectedItem.style.border = '2px solid #007BFF';
+      const resizer = selectedItem.querySelector('.resizable');
+      if (resizer) resizer.style.display = 'block';
+    }
+
+    function startMove(e, el) {
+      if (el !== selectedItem) return;
+      const rect = plan.getBoundingClientRect();
+      const offsetX = e.clientX - el.getBoundingClientRect().left;
+      const offsetY = e.clientY - el.getBoundingClientRect().top;
+
+      function onMouseMove(e) {
+        let x = e.clientX - rect.left - offsetX;
+        let y = e.clientY - rect.top - offsetY;
+        x = Math.max(0, Math.min(x, plan.clientWidth - el.offsetWidth));
+        y = Math.max(0, Math.min(y, plan.clientHeight - el.offsetHeight));
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function startResize(e, el) {
+      const rect = plan.getBoundingClientRect();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startWidth = el.offsetWidth;
+      const startHeight = el.offsetHeight;
+
+      function onMouseMove(e) {
+        let width = startWidth + (e.clientX - startX);
+        let height = startHeight + (e.clientY - startY);
+        width = Math.max(30, Math.min(width, plan.clientWidth - el.offsetLeft));
+        height = Math.max(30, Math.min(height, plan.clientHeight - el.offsetTop));
+        el.style.width = `${width}px`;
+        el.style.height = `${height}px`;
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    document.getElementById('color-button').addEventListener('click', () => {
+      document.getElementById('colorModal').style.display = 'block';
+    });
+
+    document.querySelectorAll('.color-option').forEach((option) => {
+      option.addEventListener('click', (e) => {
+        const color = e.target.getAttribute('data-color');
+        if (selectedItem) {
+          selectedItem.style.backgroundColor = color;
+        }
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        e.target.classList.add('selected');
+      });
+    });
+
+    document.getElementById('opacityRange').addEventListener('input', (e) => {
+      document.getElementById('opacityValue').textContent = `${e.target.value}%`;
+    });
+
+    document.getElementById('applyColor').addEventListener('click', () => {
+      const opacity = document.getElementById('opacityRange').value;
+      if (selectedItem) {
+        selectedItem.style.opacity = opacity / 100;
+      }
+      document.getElementById('colorModal').style.display = 'none';
+    });
+
+document.getElementById('add-equipment-btn').addEventListener('click', () => {
+  const select = document.getElementById('equipment-select');
+  const value = select.value; // пример: "pc|Office-PC"
+  if (!value) return alert('Выберите оборудование');
+
+  const [type, name] = value.split('|');
+
+  equipmentToPlace = { type, name };
+
+ // alert(`Кликните на план, чтобы разместить оборудование "${name}" типа "${type.toUpperCase()}"`);
+});
+
+    let lastHighlighted = null;
+
+// Подсветка оборудования на плане при клике на карточку
+
+const highlightedDevices = {};
+
+document.querySelectorAll('.device-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const name = card.querySelector('h3').textContent;
+    const matches = document.querySelectorAll(`.plan-item[data-name="${name}"]`);
+
+    if (matches.length === 0) {
+      alert(`Оборудование "${name}" не размещено на плане.`);
+      return;
+    }
+
+    const isHighlighted = highlightedDevices[name] === true;
+
+    matches.forEach(el => {
+      el.style.outline = isHighlighted ? '' : '3px solid red';
+    });
+
+    highlightedDevices[name] = !isHighlighted;
+  });
+});
+
+function filterDevices() {
+    let input = document.getElementById('filter-input').value.toLowerCase();
+    let cards = document.getElementsByClassName('device-card');
+
+    for (let i = 0; i < cards.length; i++) {
+      let title = cards[i].getElementsByTagName('h3')[0];
+      if (title.innerText.toLowerCase().includes(input)) {
+        cards[i].style.display = "";
+      } else {
+        cards[i].style.display = "none";
+      }
+    }
+  }
+
+  
+
+
+  function updateLevelClass(element, value) {
+    element.classList.remove('low', 'medium', 'high');
+    if (value > 80) {
+      element.classList.add('high');
+    } else if (value > 50) {
+      element.classList.add('medium');
+    } else {
+      element.classList.add('low');
+    }
+  }
+
+  // Обновление каждые 5 секунд
+  setInterval(updateEquipmentStatus, 5000);
+  
+
+  
+  </script>
+<script>
+  
+  function updateEquipmentStatus() {
+    fetch('/get_status')
+      .then(response => response.json())
+      .then(data => {
+        data.forEach(device => {
+          const card = document.querySelector(`.device-card[data-id="${device.id}"]`);
+          if (card) {
+            const tempEl = card.querySelector('.temperature');
+            const cpuEl = card.querySelector('.cpu');
+            const memEl = card.querySelector('.memory');
+            const netEl = card.querySelector('.network');
+            const respEl = card.querySelector('.response');
+
+            if (tempEl) tempEl.textContent = device.temperature ?? '—';
+            if (cpuEl) {
+              cpuEl.textContent = device.cpu ?? '—';
+              updateLevelClass(cpuEl, device.cpu);
+            }
+            if (memEl) {
+              memEl.textContent = device.memory ?? '—';
+              updateLevelClass(memEl, device.memory);
+            }
+            if (netEl) netEl.textContent = device.network ?? '—';
+            if (respEl) {
+              respEl.textContent = device.response ?? '—';
+              updateLevelClass(respEl, device.response);
+            }
+          }
+        });
+      });
+  }
+
+  // Обновляем каждые 5 секунд
+  setInterval(updateEquipmentStatus, 5000);
+
+  // И сразу при загрузке
+  updateEquipmentStatus();
+
+
+
+
+function updateLevelClass(element, value) {
+  if (!element) return;
+  element.classList.remove('low', 'medium', 'high');
+  if (value > 80) {
+    element.classList.add('high');
+  } else if (value > 50) {
+    element.classList.add('medium');
+  } else {
+    element.classList.add('low');
+  }
+}
+
+// ⏱ Запуск каждые 10 секунд
+setInterval(updateEquipmentStatus, 5000);
+</script>
+
+
+
+
+  <script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/66f308674cbc4814f7de0b70/1i8ilhl2e';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+
+
+</script>
+
+</body>
+</html>
+</html>

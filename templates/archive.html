@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>📦 Архив оборудования - MoniQ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .device-list-horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .device-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 280px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .device-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+
+        .device-card h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #007bff;
+        }
+
+        .device-card p {
+            margin: 6px 0;
+            font-size: 14px;
+        }
+
+        .temperature {
+            color: #ff8c00;
+        }
+
+        .cpu.high, .memory.high, .response.high {
+            color: red;
+            font-weight: bold;
+        }
+
+        .cpu.medium, .memory.medium, .response.medium {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .cpu.low, .memory.low, .response.low {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>📦 Архив оборудования</h1>
+    <a href="{{ url_for('index') }}" class="btn-secondary" style="padding: 10px 15px; background-color: #419dff;">← Назад</a>
+    {% if equipment %}
+        <div class="device-list-horizontal">
+            {% for device in equipment %}
+                <div class="device-card" data-id="{{ device.id }}">
+                    <h3>{{ device.name }}</h3>
+                    <p><strong>Описание:</strong> {{ device.description }}</p>
+                    <p><strong>Температура:</strong> <span class="temperature">{{ device.temperature }}</span> °C</p>
+                    <p><strong>CPU:</strong>
+                        <span class="cpu {% if device.cpu > 80 %}high{% elif device.cpu > 50 %}medium{% else %}low{% endif %}">
+                            {{ device.cpu }}
+                        </span>%
+                    </p>
+                    <p><strong>Память:</strong>
+                        <span class="memory {% if device.memory > 80 %}high{% elif device.memory > 50 %}medium{% else %}low{% endif %}">
+                            {{ device.memory }}
+                        </span>%
+                    </p>
+                    <p><strong>Сеть:</strong> <span class="network">{{ device.network }}</span> Мбит/с</p>
+                    <p><strong>Задержка:</strong>
+                        <span class="response {% if device.response > 150 %}high{% elif device.response > 70 %}medium{% else %}low{% endif %}">
+                            {{ device.response }}
+                        </span> мс
+                    </p>
+                    <p><strong>Последнее обновление:</strong> {{ device.last_update }}</p>
+                        <form action="{{ url_for('restore', device_id=device.id) }}" method="post">
+        <form action="{{ url_for('restore', device_id=device.id) }}" method="post">
+        <button type="submit" class="btn-secondary" style="background-color: #28a745; margin-top: 10px;">Восстановить</button>
+
+                <form action="{{ url_for('delete_equipment', equipment_id=device_id) }}" method="post" style="display:inline;">
+             <button type="submit" class="btn-secondary" style="background-color: #c20909; margin-top: 10px;">🗑 Удалить</button>
+        </form>
+
+    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Архив пуст.</p>
+    {% endif %}
+</body>
+</html>
